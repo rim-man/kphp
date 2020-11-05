@@ -40,6 +40,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         lambda-generator.cpp
         lambda-interface-generator.cpp
         lib-data.cpp
+        performance-inspections.cpp
         src-file.cpp
         var-data.cpp
         vars-collector.cpp
@@ -91,6 +92,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
 
 prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         analyzer.cpp
+        analyze-performance.cpp
         calc-actual-edges.cpp
         calc-bad-vars.cpp
         calc-const-types.cpp
