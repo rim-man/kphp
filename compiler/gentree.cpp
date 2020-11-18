@@ -530,7 +530,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow) {
     case tok_func_name: {
       cur++;
       if (!test_expect(tok_oppar)) {
-        if (vk::any_of_equal(op->str_val, "die", "exit")) { // can be called without "()"
+        if (!was_arrow && vk::any_of_equal(op->str_val, "die", "exit")) { // can be called without "()"
           res = get_vertex_with_str_val(VertexAdaptor<op_func_call>{}, static_cast<string>(op->str_val));
         } else {
           res = get_vertex_with_str_val(VertexAdaptor<op_func_name>{}, static_cast<string>(op->str_val));
@@ -1403,6 +1403,81 @@ ClassMemberModifiers GenTree::parse_class_member_modifier_mask() {
   return modifiers;
 }
 
+// get_identifier consumes tok_func_name and returns its string value;
+// for classes it can also consume the semi-reserved keywords like "else"
+std::string GenTree::get_identifier() {
+  bool ok = test_expect(tok_func_name);
+
+  if (!ok && cur_class) {
+    // check whether it's a semi-reserved keyword
+    switch (cur->type()) {
+      case tok_empty:
+      case tok_callable:
+      case tok_class:
+      case tok_trait:
+      case tok_extends:
+      case tok_implements:
+      case tok_static:
+      case tok_abstract:
+      case tok_final:
+      case tok_public:
+      case tok_protected:
+      case tok_private:
+      case tok_const:
+      case tok_log_and_let:
+      case tok_global:
+      case tok_goto:
+      case tok_instanceof:
+      case tok_interface:
+      case tok_namespace:
+      case tok_new:
+      case tok_log_or_let:
+      case tok_log_xor_let:
+      case tok_try:
+      case tok_use:
+      case tok_var:
+      case tok_list:
+      case tok_clone:
+      case tok_include:
+      case tok_include_once:
+      case tok_throw:
+      case tok_array:
+      case tok_print:
+      case tok_echo:
+      case tok_require:
+      case tok_require_once:
+      case tok_return:
+      case tok_else:
+      case tok_elseif:
+      case tok_default:
+      case tok_break:
+      case tok_continue:
+      case tok_switch:
+      case tok_function:
+      case tok_if:
+      case tok_for:
+      case tok_foreach:
+      case tok_declare:
+      case tok_case:
+      case tok_do:
+      case tok_while:
+      case tok_as:
+      case tok_catch:
+      case tok_isset:
+      case tok_unset:
+        ok = true;
+        break;
+      default:
+        ok = false; // to avoid uncovered enum entries warning
+    }
+  }
+
+  kphp_error(ok, expect_msg("identifier"));
+
+  next_cur();
+  return static_cast<string>(std::prev(cur)->str_val);
+}
+
 VertexPtr GenTree::get_class_member(vk::string_view phpdoc_str) {
   auto modifiers = parse_class_member_modifier_mask();
   if (!modifiers.is_static()) {
@@ -1461,7 +1536,8 @@ VertexAdaptor<op_function> GenTree::get_function(vk::string_view phpdoc_str, Fun
   if (is_lambda) {
     func_name = gen_anonymous_function_name(cur_function);   // cur_function is a parent function here
   } else {
-    CE(expect(tok_func_name, "'tok_func_name'"));
+    func_name = get_identifier();
+    CE(!func_name.empty());
     func_name = static_cast<string>(std::prev(cur)->str_val);
     if (cur_class) {        // fname inside a class is full$class$name$$fname
       func_name = replace_backslashes(cur_class->name) + "$$" + func_name;
@@ -2151,10 +2227,11 @@ VertexPtr GenTree::get_const(AccessModifiers access) {
 
   bool const_in_global_scope = functions_stack.size() == 1 && !cur_class;
   bool const_in_class = !!cur_class;
-  std::string const_name{cur->str_val};
 
   CE (!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
-  CE (expect(tok_func_name, "constant name"));
+  std::string const_name = get_identifier();
+  CE (!const_name.empty());
+  kphp_error(const_name != "class", "A class constant must not be called 'class'; it is reserved for class name fetching");
 
   CE (expect(tok_eq1, "'='"));
   VertexPtr v = get_expression();
