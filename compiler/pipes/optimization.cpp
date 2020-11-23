@@ -302,6 +302,10 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
         }
       }
     }
+  } else if (auto op_return_vertex = root.try_as<op_return>()) {
+    if (op_return_vertex->has_expr()) {
+      explicit_cast_array_type(op_return_vertex->expr(), tinf::get_type(current_function, -1), &current_function->explicit_const_var_ids);
+    }
   }
 
   root = fix_int_const(root);
