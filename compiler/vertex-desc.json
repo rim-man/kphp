@@ -288,30 +288,6 @@
     }
   },
   {
-    "comment": "artificial op that can be created during the op_conv_uint processing",
-    "name": "op_uint_const",
-    "base_name": "meta_op_num",
-    "props": {
-      "str": "const uint"
-    }
-  },
-  {
-    "comment": "artificial op that can be created during the op_conv_long processing",
-    "name": "op_long_const",
-    "base_name": "meta_op_num",
-    "props": {
-      "str": "const long"
-    }
-  },
-  {
-    "comment": "artificial op that can be created during the op_conv_ulong processing",
-    "name": "op_ulong_const",
-    "base_name": "meta_op_num",
-    "props": {
-      "str": "const ulong"
-    }
-  },
-  {
     "comment": "floating point value literal, like 32.5",
     "name": "op_float_const",
     "base_name": "meta_op_num",
@@ -1590,39 +1566,6 @@
       "cnst": "cnst_const_func",
       "type": "conv_op",
       "str": "mixed"
-    }
-  },
-  {
-    "comment": "artificial op that converts expr() to tp_UInt",
-    "name": "op_conv_uint",
-    "base_name": "meta_op_unary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "conv_op",
-      "str": "f$uintval"
-    }
-  },
-  {
-    "comment": "longval(expr())",
-    "name": "op_conv_long",
-    "base_name": "meta_op_unary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "conv_op",
-      "str": "f$longval"
-    }
-  },
-  {
-    "comment": "ulongval(expr())",
-    "name": "op_conv_ulong",
-    "base_name": "meta_op_unary",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_const_func",
-      "type": "conv_op",
-      "str": "f$ulongval"
     }
   },
   {
