@@ -47,6 +47,7 @@ public:
 
   virtual class_instance<C$VK$TL$RpcResponse> fetch_typed_response() = 0;
   virtual std::unique_ptr<tl_func_base> extract_untyped_fetcher() = 0;
+  virtual bool is_typed() const = 0;
   virtual ~RpcRequestResult() = default;
 
 protected:
@@ -64,6 +65,10 @@ public:
 
   std::unique_ptr<tl_func_base> extract_untyped_fetcher() final {
     return std::move(result_fetcher_);
+  }
+
+  bool is_typed() const final {
+    return false;
   }
 };
 
@@ -83,6 +88,10 @@ public:
   std::unique_ptr<tl_func_base> extract_untyped_fetcher() final {
     php_assert(!"Forbidden to call for typed rpc requests");
     return {};
+  }
+
+  bool is_typed() const final {
+    return true;
   }
 };
 
