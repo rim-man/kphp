@@ -1593,9 +1593,8 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       }
       assert(fetched_bytes == len);
       auto D = TCP_RPC_DATA(c);
-      rpc_query_data *rpc_data = rpc_query_data_create(reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)),
-                                                       req_id, D->remote_pid.ip, D->remote_pid.port,
-                                                       D->remote_pid.pid, D->remote_pid.utime);
+      rpc_query_data *rpc_data = rpc_query_data_create(std::move(header), reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)), D->remote_pid.ip,
+                                                       D->remote_pid.port, D->remote_pid.pid, D->remote_pid.utime);
 
       php_worker *worker = php_worker_create(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data,
                                              actual_script_timeout, req_id);

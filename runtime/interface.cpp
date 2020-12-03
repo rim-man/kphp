@@ -14,6 +14,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#include "common/tl/constants/common.h"
 #include "common/algorithms/string-algorithms.h"
 
 #include "runtime/array_functions.h"
@@ -1305,6 +1306,51 @@ static void parse_http_authorization_header(const string &header_value) {
   v$_SERVER.set_value(string("AUTH_TYPE"), auth_scheme);
 }
 
+static void save_rpc_query_headers(const tl_query_header_t &header) {
+  namespace flag = vk::tl::common::rpc_invoke_req_extra_flags;
+
+  if (header.actor_id) {
+    v$_SERVER.set_value(string("RPC_ACTOR_ID"), static_cast<int64_t>(header.actor_id));
+  }
+  if (header.flags) {
+    v$_SERVER.set_value(string("RPC_EXTRA_FLAGS"), header.flags);
+  }
+  if (header.flags & flag::wait_binlog_pos) {
+    v$_SERVER.set_value(string("RPC_EXTRA_WAIT_BINLOG_POS"), static_cast<int64_t>(header.wait_binlog_pos));
+  }
+  if (header.flags & flag::string_forward_keys) {
+    array<string> string_forward_keys;
+    string_forward_keys.reserve(header.string_forward_keys.size(), 0, true);
+    for (const auto &str_key : header.string_forward_keys) {
+      string_forward_keys.emplace_back(string().assign(str_key.c_str()));
+    }
+    v$_SERVER.set_value(string("RPC_EXTRA_STRING_FORWARD_KEYS"), string_forward_keys);
+  }
+  if (header.flags & flag::int_forward_keys) {
+    array<int64_t> int_forward_keys;
+    int_forward_keys.reserve(header.int_forward_keys.size(), 0, true);
+    for (int int_key : header.int_forward_keys) {
+      int_forward_keys.emplace_back(int_key);
+    }
+    v$_SERVER.set_value(string("RPC_EXTRA_INT_FORWARD_KEYS"), int_forward_keys);
+  }
+  if (header.flags & flag::string_forward) {
+    v$_SERVER.set_value(string("RPC_EXTRA_STRING_FORWARD"), string().assign(header.string_forward.c_str()));
+  }
+  if (header.flags & flag::int_forward) {
+    v$_SERVER.set_value(string("RPC_EXTRA_INT_FORWARD"), static_cast<int64_t>(header.int_forward));
+  }
+  if (header.flags & flag::custom_timeout_ms) {
+    v$_SERVER.set_value(string("RPC_EXTRA_CUSTOM_TIMEOUT_MS"), header.custom_timeout);
+  }
+  if (header.flags & flag::supported_compression_version) {
+    v$_SERVER.set_value(string("RPC_EXTRA_SUPPORTED_COMPRESSION_VERSION"), header.supported_compression_version);
+  }
+  if (header.flags & flag::random_delay) {
+    v$_SERVER.set_value(string("RPC_EXTRA_RANDOM_DELAY"), header.random_delay);
+  }
+}
+
 static void init_superglobals(const http_query_data *http_data, const rpc_query_data *rpc_data) {
   rpc_parse(rpc_data->data, rpc_data->len);
 
@@ -1488,13 +1534,13 @@ static void init_superglobals(const http_query_data *http_data, const rpc_query_
   if (http_data->port) {
     v$_SERVER.set_value(string("REMOTE_PORT"), static_cast<int>(http_data->port));
   }
-  if (rpc_data->req_id) {
-    v$_SERVER.set_value(string("RPC_REQUEST_ID"), f$strval(Long(rpc_data->req_id)));
+  if (rpc_data->header.qid) {
+    v$_SERVER.set_value(string("RPC_REQUEST_ID"), f$strval(Long(rpc_data->header.qid)));
+    save_rpc_query_headers(rpc_data->header);
     v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data->ip));
     v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data->port));
     v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data->pid));
     v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data->utime);
-
   }
   is_head_query = false;
   if (http_data->request_method_len) {
